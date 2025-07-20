@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HLS Stream with MP4 Download</title>
+    <style>
+        body {
+            background: #121212;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        video {
+            width: 80%;
+            max-width: 800px;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .vjs-download-button .vjs-icon-placeholder::before {
+            content: "⬇";
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+</head>
+<body>
+
+<h2>Watch Online / Download for Offline Use</h2>
+<select id="videoid" onchange="updateVideo()"></select>
+<br/>
+<label id="videoName"></label>
+<br/>
+
+<video id="my-player" class="video-js" controls preload="auto" width="640" height="264" data-setup='{}'></video>
+<script>
+    const Player = videojs.getComponent('Player');
+    const Button = videojs.getComponent('Button');
+    const baseURL = 'https://sub-data.streaming.digitalschool.gov.gr';
+    window.videoId = null;
+
+    let vidList = [];
+
+    fetch('7390_28052025-20250608.json')
+        .then(response => response.json())
+        .then(vids => {
+            vidList = vids["existing_files"]
+
+            const selectElement = document.getElementById('videoid');
+            vidList.forEach(vid => {
+                const option = document.createElement('option');
+                option.value = vid.identity;
+                option.textContent = vid.identity;
+                selectElement.appendChild(option);
+            });
+
+            setVideo(selectElement.value);
+
+        })
+        .catch(err => console.error('Error loading CSV:', err));
+
+    class DownloadButton extends Button {
+        constructor(player, options) {
+            super(player, options);
+            this.controlText('Download Video');
+        }
+
+        handleClick() {
+            const a = document.createElement('a');
+            a.href = `${baseURL}/${window.videoId}/${window.videoId}.zip`;
+            a.download = '';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    }
+
+    videojs.registerComponent('DownloadButton', DownloadButton);
+
+    const player = videojs('my-player');
+
+
+    function updateVideo() {
+        const selectElement = document.getElementById('videoid');
+        console.log('Selected video: ' + selectElement.value);
+        setVideo(selectElement.value);
+    }
+
+    function setVideo(theVideoId) {
+        window.videoId = theVideoId;
+
+        for (const vidListElement of vidList) {
+            if (vidListElement.identity === window.videoId) {
+                const videoName = document.getElementById('videoName');
+                videoName.textContent = vidListElement.identity + " [" + vidListElement.code + "] : " + vidListElement.title;
+            }
+        }
+
+        if (Hls.isSupported()) {
+            console.log("hls supported");
+            player.src({
+                src: `${baseURL}/${theVideoId}/${theVideoId}.m3u8`,
+                type: "application/vnd.apple.mpegurl"
+            })
+        } else {
+            console.log("fallback to mp4");
+            player.src({
+                src: `${baseURL}/${theVideoId}/${theVideoId}.mp4`,
+                type: "video/mp4"
+            })
+            // Dynamically add text tracks
+            player.addRemoteTextTrack({
+                kind: 'subtitles',
+                src: `${baseURL}/${theVideoId}/subtitles_en.vtt`,
+                srclang: 'en',
+                label: 'English'
+            }, false);
+
+            player.addRemoteTextTrack({
+                kind: 'subtitles',
+                src: `${baseURL}/${theVideoId}/subtitles_el.vtt`,
+                srclang: 'el',
+                label: 'Greek'
+            }, false);
+        }
+    }
+
+    player.ready(() => {
+        //download zip
+        const downloadButton = player.controlBar.addChild('DownloadButton', {});
+        downloadButton.addClass('vjs-download-button');
+    });
+
+
+</script>
+
+
+</body>
+</html>
