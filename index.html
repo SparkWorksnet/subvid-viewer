@@ -36,7 +36,24 @@
 <h2>Watch Online / Download for Offline Use</h2>
 <select id="videoid" onchange="updateVideo()"></select>
 <br/>
-<label id="videoName"></label>
+<table>
+    <tr>
+        <td>Αρ. Πρωτοκόλλου:</td>
+        <td><label id="videoRelease"></label></td>
+    </tr>
+    <tr>
+        <td>Identity:</td>
+        <td><label id="videoIdentity"></label></td>
+    </tr>
+    <tr>
+        <td>Code:</td>
+        <td><label id="videoCode"></label></td>
+    </tr>
+    <tr>
+        <td>Title:</td>
+        <td><label id="videoName"></label></td>
+    </tr>
+</table>
 <br/>
 
 <video id="my-player" class="video-js" controls preload="auto" width="800" height="600" data-setup='{}'></video>
@@ -48,17 +65,47 @@
 
     let vidList = [];
 
+    let videosMap = {};
+
     fetch('7390_28052025-20250608.json')
         .then(response => response.json())
         .then(vids => {
             vidList = vids["existing_files"]
 
             const selectElement = document.getElementById('videoid');
+            const opg = document.createElement('optgroup');
+            opg.label = "7390_28052025";
+            selectElement.appendChild(opg);
+
             vidList.forEach(vid => {
                 const option = document.createElement('option');
                 option.value = vid.identity;
                 option.textContent = vid.identity;
-                selectElement.appendChild(option);
+                videosMap[vid.identity] = opg.label;
+                opg.appendChild(option);
+            });
+
+            setVideo(selectElement.value);
+
+        })
+        .catch(err => console.error('Error loading CSV:', err));
+
+    fetch('11189_28072025-20250728.json')
+        .then(response => response.json())
+        .then(vids => {
+            vidList = vids["existing_files"]
+
+            const selectElement = document.getElementById('videoid');
+            const opg = document.createElement('optgroup');
+            opg.label = "11189_28072025";
+            selectElement.appendChild(opg);
+
+            vidList.forEach(vid => {
+                const option = document.createElement('option');
+                option.value = vid.identity;
+                option.textContent = vid.identity;
+                videosMap[vid.identity] = opg.label;
+                opg.appendChild(option);
             });
 
             setVideo(selectElement.value);
@@ -96,10 +143,14 @@
     function setVideo(theVideoId) {
         window.videoId = theVideoId;
 
+        document.getElementById('videoRelease').textContent = videosMap[theVideoId];
+
         for (const vidListElement of vidList) {
             if (vidListElement.identity === window.videoId) {
-                const videoName = document.getElementById('videoName');
-                videoName.textContent = vidListElement.identity + " [" + vidListElement.code + "] : " + vidListElement.title;
+                const videoName = document.getElementById('');
+                document.getElementById('videoIdentity').textContent = vidListElement.identity;
+                document.getElementById('videoCode').textContent = vidListElement.code;
+                document.getElementById('videoName').textContent = vidListElement.title;
             }
         }
 
