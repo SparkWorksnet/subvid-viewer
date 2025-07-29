@@ -38,6 +38,10 @@
 <br/>
 <table>
     <tr>
+        <td>Συνολικά Βιντεο:</td>
+        <td><label id="totalVideos"></label></td>
+    </tr>
+    <tr>
         <td>Αρ. Πρωτοκόλλου:</td>
         <td><label id="videoRelease"></label></td>
     </tr>
@@ -66,23 +70,38 @@
     let vidList = [];
 
     let videosMap = {};
+    let total_count = 0;
 
     fetch('7390_28052025-20250608.json')
         .then(response => response.json())
         .then(vids => {
-            vidList = vids["existing_files"]
 
             const selectElement = document.getElementById('videoid');
             const opg = document.createElement('optgroup');
             opg.label = "7390_28052025";
             selectElement.appendChild(opg);
 
-            vidList.forEach(vid => {
+            vids["existing_files"].forEach(vid => {
                 const option = document.createElement('option');
                 option.value = vid.identity;
                 option.textContent = vid.identity;
                 videosMap[vid.identity] = opg.label;
                 opg.appendChild(option);
+
+                vidList.push(vid);
+                total_count++;
+                document.getElementById('totalVideos').textContent = total_count;
+            });
+            vids["missing_files"].forEach(vid => {
+                const option = document.createElement('option');
+                option.value = vid.identity;
+                option.textContent = vid.identity;
+                videosMap[vid.identity] = opg.label;
+                opg.appendChild(option);
+
+                vidList.push(vid);
+                total_count++;
+                document.getElementById('totalVideos').textContent = total_count;
             });
 
             setVideo(selectElement.value);
@@ -90,22 +109,38 @@
         })
         .catch(err => console.error('Error loading CSV:', err));
 
-    fetch('11189_28072025-20250728.json')
+
+    fetch('11189_28072025-20250729.json')
         .then(response => response.json())
         .then(vids => {
-            vidList = vids["existing_files"]
 
             const selectElement = document.getElementById('videoid');
             const opg = document.createElement('optgroup');
             opg.label = "11189_28072025";
             selectElement.appendChild(opg);
 
-            vidList.forEach(vid => {
+            vids["existing_files"].forEach(vid => {
                 const option = document.createElement('option');
                 option.value = vid.identity;
                 option.textContent = vid.identity;
                 videosMap[vid.identity] = opg.label;
                 opg.appendChild(option);
+
+                vidList.push(vid);
+                total_count++;
+                document.getElementById('totalVideos').textContent = total_count;
+            });
+
+            vids["missing_files"].forEach(vid => {
+                const option = document.createElement('option');
+                option.value = vid.identity;
+                option.textContent = vid.identity;
+                videosMap[vid.identity] = opg.label;
+                opg.appendChild(option);
+
+                vidList.push(vid);
+                total_count++;
+                document.getElementById('totalVideos').textContent = total_count;
             });
 
             setVideo(selectElement.value);
