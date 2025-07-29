@@ -34,11 +34,12 @@
 <body>
 
 <h2>Watch Online / Download for Offline Use</h2>
-<select id="videoid" onchange="updateVideo()"></select>
+<label for="video_id">Video Identity:</label>
+<select id="video_id" onchange="updateVideo()"></select>
 <br/>
 <table>
     <tr>
-        <td>Συνολικά Βιντεο:</td>
+        <td>Συνολικά Video:</td>
         <td><label id="totalVideos"></label></td>
     </tr>
     <tr>
@@ -62,7 +63,6 @@
 
 <video id="my-player" class="video-js" controls preload="auto" width="800" height="600" data-setup='{}'></video>
 <script>
-    const Player = videojs.getComponent('Player');
     const Button = videojs.getComponent('Button');
     const baseURL = 'https://sub-data.streaming.digitalschool.gov.gr';
     window.videoId = null;
@@ -72,80 +72,39 @@
     let videosMap = {};
     let total_count = 0;
 
+    function handleVideoList(videosFile, name) {
+        const selectElement = document.getElementById('video_id');
+        const opg = document.createElement('optgroup');
+        opg.label = name;
+        selectElement.appendChild(opg);
+
+        videosFile["existing_files"].forEach(vid => populateOptions(vid, opg));
+        videosFile["missing_files"].forEach(vid => populateOptions(vid, opg));
+
+        setVideo(selectElement.value);
+    }
+
+    function populateOptions(videoInfo, opg) {
+        let option = document.createElement('option');
+        option.value = videoInfo.identity;
+        option.textContent = videoInfo.identity;
+        videosMap[videoInfo.identity] = opg.label;
+        opg.appendChild(option);
+
+        vidList.push(videoInfo);
+        total_count++;
+        document.getElementById('totalVideos').textContent = `${total_count}`;
+    }
+
     fetch('7390_28052025-20250608.json')
         .then(response => response.json())
-        .then(vids => {
-
-            const selectElement = document.getElementById('videoid');
-            const opg = document.createElement('optgroup');
-            opg.label = "7390_28052025";
-            selectElement.appendChild(opg);
-
-            vids["existing_files"].forEach(vid => {
-                const option = document.createElement('option');
-                option.value = vid.identity;
-                option.textContent = vid.identity;
-                videosMap[vid.identity] = opg.label;
-                opg.appendChild(option);
-
-                vidList.push(vid);
-                total_count++;
-                document.getElementById('totalVideos').textContent = total_count;
-            });
-            vids["missing_files"].forEach(vid => {
-                const option = document.createElement('option');
-                option.value = vid.identity;
-                option.textContent = vid.identity;
-                videosMap[vid.identity] = opg.label;
-                opg.appendChild(option);
-
-                vidList.push(vid);
-                total_count++;
-                document.getElementById('totalVideos').textContent = total_count;
-            });
-
-            setVideo(selectElement.value);
-
-        })
+        .then(videos => handleVideoList(videos, "7390_28052025"))
         .catch(err => console.error('Error loading CSV:', err));
 
 
     fetch('11189_28072025-20250729.json')
         .then(response => response.json())
-        .then(vids => {
-
-            const selectElement = document.getElementById('videoid');
-            const opg = document.createElement('optgroup');
-            opg.label = "11189_28072025";
-            selectElement.appendChild(opg);
-
-            vids["existing_files"].forEach(vid => {
-                const option = document.createElement('option');
-                option.value = vid.identity;
-                option.textContent = vid.identity;
-                videosMap[vid.identity] = opg.label;
-                opg.appendChild(option);
-
-                vidList.push(vid);
-                total_count++;
-                document.getElementById('totalVideos').textContent = total_count;
-            });
-
-            vids["missing_files"].forEach(vid => {
-                const option = document.createElement('option');
-                option.value = vid.identity;
-                option.textContent = vid.identity;
-                videosMap[vid.identity] = opg.label;
-                opg.appendChild(option);
-
-                vidList.push(vid);
-                total_count++;
-                document.getElementById('totalVideos').textContent = total_count;
-            });
-
-            setVideo(selectElement.value);
-
-        })
+        .then(videos => handleVideoList(videos, "11189_28072025"))
         .catch(err => console.error('Error loading CSV:', err));
 
     class DownloadButton extends Button {
@@ -170,7 +129,7 @@
 
 
     function updateVideo() {
-        const selectElement = document.getElementById('videoid');
+        const selectElement = document.getElementById('video_id');
         console.log('Selected video: ' + selectElement.value);
         setVideo(selectElement.value);
     }
@@ -182,7 +141,6 @@
 
         for (const vidListElement of vidList) {
             if (vidListElement.identity === window.videoId) {
-                const videoName = document.getElementById('');
                 document.getElementById('videoIdentity').textContent = vidListElement.identity;
                 document.getElementById('videoCode').textContent = vidListElement.code;
                 document.getElementById('videoName').textContent = vidListElement.title;
