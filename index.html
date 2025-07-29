@@ -67,6 +67,10 @@
     const baseURL = 'https://sub-data.streaming.digitalschool.gov.gr';
     window.videoId = null;
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const selected_video_id = urlParams.get('video_id');
+    console.log(`selected_video_id: ${selected_video_id}`);
+
     let vidList = [];
 
     let videosMap = {};
@@ -88,6 +92,9 @@
         let option = document.createElement('option');
         option.value = videoInfo.identity;
         option.textContent = videoInfo.identity;
+        if (selected_video_id === videoInfo.identity) {
+            option.selected = true;
+        }
         videosMap[videoInfo.identity] = opg.label;
         opg.appendChild(option);
 
