@@ -124,6 +124,11 @@
         .then(videos => handleVideoList(videos, "000001_23122025"))
         .catch(err => console.error('Error loading CSV:', err));
 
+    fetch('000001_10012026-20260119.json')
+        .then(response => response.json())
+        .then(videos => handleVideoList(videos, "000001_10012026"))
+        .catch(err => console.error('Error loading CSV:', err));
+
     class DownloadButton extends Button {
         constructor(player, options) {
             super(player, options);
