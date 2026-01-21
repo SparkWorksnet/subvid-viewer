@@ -26,16 +26,66 @@
             font-size: 16px;
             cursor: pointer;
         }
+
+        select#file_id {
+            background-color: #2a2a2a;
+            color: white;
+            border: 1px solid #444;
+            padding: 8px;
+            margin-bottom: 1rem;
+            min-width: 200px;
+        }
     </style>
     <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" rel="stylesheet"/>
+    <style>
+        /* Choices.js dark theme styling - must be after choices.min.css */
+        .choices {
+            margin-bottom: 1rem;
+            min-width: 500px;
+        }
+        .choices__inner {
+            background-color: #2a2a2a !important;
+            border-color: #444 !important;
+            color: white !important;
+            min-height: 40px;
+        }
+        .choices__input {
+            background-color: #2a2a2a !important;
+            color: white !important;
+        }
+        .choices__input::placeholder {
+            color: #888 !important;
+        }
+        .choices__list--dropdown {
+            background-color: #2a2a2a !important;
+            border-color: #444 !important;
+        }
+        .choices__list--dropdown .choices__item {
+            color: white !important;
+        }
+        .choices__list--dropdown .choices__item--selectable.is-highlighted {
+            background-color: #444 !important;
+        }
+        .choices__list--single .choices__item {
+            color: white !important;
+        }
+        .choices__placeholder {
+            color: #888 !important;
+        }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 </head>
 <body>
 
 <h2>Watch Online / Download for Offline Use</h2>
+<label for="file_id">Αρχείο:</label>
+<select id="file_id" onchange="updateFileSelection()"></select>
+<br/>
 <label for="video_id">Video Identity:</label>
-<select id="video_id" onchange="updateVideo()"></select>
+<select id="video_id"></select>
 <br/>
 <table>
     <tr>
@@ -71,63 +121,88 @@
     const selected_video_id = urlParams.get('video_id');
     console.log(`selected_video_id: ${selected_video_id}`);
 
-    let vidList = [];
-
-    let videosMap = {};
+    // Store videos per file
+    let filesData = {};
     let total_count = 0;
+    let videoChoices = null;
+
+    // List of JSON files to fetch
+    const jsonFiles = [
+        { file: '7390_28052025-20250608.json', name: '7390_28052025' },
+        { file: '11189_28072025-20250729.json', name: '11189_28072025' },
+        { file: '19075_27102025-20251028.json', name: '19075_27102025' },
+        { file: '000001_23122025-20251223.json', name: '000001_23122025' },
+        { file: '000001_10012026-20260119.json', name: '000001_10012026' }
+    ];
 
     function handleVideoList(videosFile, name) {
-        const selectElement = document.getElementById('video_id');
-        const opg = document.createElement('optgroup');
-        opg.label = name;
-        selectElement.appendChild(opg);
+        // Store videos for this file
+        const videos = [];
+        videosFile["existing_files"].forEach(vid => videos.push(vid));
+        videosFile["missing_files"].forEach(vid => videos.push(vid));
 
-        videosFile["existing_files"].forEach(vid => populateOptions(vid, opg));
-        videosFile["missing_files"].forEach(vid => populateOptions(vid, opg));
-
-        setVideo(selectElement.value);
-    }
-
-    function populateOptions(videoInfo, opg) {
-        let option = document.createElement('option');
-        option.value = videoInfo.identity;
-        option.textContent = videoInfo.identity;
-        if (selected_video_id === videoInfo.identity) {
-            option.selected = true;
-        }
-        videosMap[videoInfo.identity] = opg.label;
-        opg.appendChild(option);
-
-        vidList.push(videoInfo);
-        total_count++;
+        filesData[name] = videos;
+        total_count += videos.length;
         document.getElementById('totalVideos').textContent = `${total_count}`;
+
+        // Add option to file dropdown
+        const fileSelect = document.getElementById('file_id');
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        fileSelect.appendChild(option);
+
+        // Check if selected_video_id belongs to this file
+        if (selected_video_id) {
+            const found = videos.find(v => v.identity === selected_video_id);
+            if (found) {
+                fileSelect.value = name;
+                updateFileSelection();
+                if (videoChoices) {
+                    videoChoices.setChoiceByValue(selected_video_id);
+                }
+                setVideo(selected_video_id);
+            }
+        } else if (fileSelect.options.length === 1) {
+            // First file loaded, populate video dropdown
+            updateFileSelection();
+        }
     }
 
-    fetch('7390_28052025-20250608.json')
-        .then(response => response.json())
-        .then(videos => handleVideoList(videos, "7390_28052025"))
-        .catch(err => console.error('Error loading CSV:', err));
+    function updateFileSelection() {
+        const fileSelect = document.getElementById('file_id');
+        const selectedFile = fileSelect.value;
 
+        if (selectedFile && filesData[selectedFile]) {
+            // Build choices array for Choices.js
+            const choices = filesData[selectedFile].map(videoInfo => ({
+                value: videoInfo.identity,
+                label: videoInfo.identity
+            }));
 
-    fetch('11189_28072025-20250729.json')
-        .then(response => response.json())
-        .then(videos => handleVideoList(videos, "11189_28072025"))
-        .catch(err => console.error('Error loading CSV:', err));
+            // Update Choices.js
+            if (videoChoices) {
+                videoChoices.clearStore();
+                videoChoices.setChoices(choices, 'value', 'label', true);
+            }
 
-    fetch('19075_27102025-20251028.json')
-        .then(response => response.json())
-        .then(videos => handleVideoList(videos, "19075_27102025"))
-        .catch(err => console.error('Error loading CSV:', err));
+            // Set first video
+            if (choices.length > 0) {
+                if (videoChoices) {
+                    videoChoices.setChoiceByValue(choices[0].value);
+                }
+                setVideo(choices[0].value);
+            }
+        }
+    }
 
-    fetch('000001_23122025-20251223.json')
-        .then(response => response.json())
-        .then(videos => handleVideoList(videos, "000001_23122025"))
-        .catch(err => console.error('Error loading CSV:', err));
-
-    fetch('000001_10012026-20260119.json')
-        .then(response => response.json())
-        .then(videos => handleVideoList(videos, "000001_10012026"))
-        .catch(err => console.error('Error loading CSV:', err));
+    // Fetch all JSON files
+    jsonFiles.forEach(({ file, name }) => {
+        fetch(file)
+            .then(response => response.json())
+            .then(videos => handleVideoList(videos, name))
+            .catch(err => console.error(`Error loading ${file}:`, err));
+    });
 
     class DownloadButton extends Button {
         constructor(player, options) {
@@ -149,6 +224,20 @@
 
     const player = videojs('my-player');
 
+    // Initialize Choices.js on video dropdown
+    videoChoices = new Choices('#video_id', {
+        searchEnabled: true,
+        searchPlaceholderValue: 'Search video...',
+        itemSelectText: '',
+        shouldSort: false,
+        placeholder: true,
+        placeholderValue: 'Select a video'
+    });
+
+    // Listen for change event from Choices.js
+    document.getElementById('video_id').addEventListener('change', function(e) {
+        updateVideo();
+    });
 
     function updateVideo() {
         const selectElement = document.getElementById('video_id');
@@ -159,13 +248,15 @@
     function setVideo(theVideoId) {
         window.videoId = theVideoId;
 
-        document.getElementById('videoRelease').textContent = videosMap[theVideoId];
+        const selectedFile = document.getElementById('file_id').value;
+        document.getElementById('videoRelease').textContent = selectedFile;
 
-        for (const vidListElement of vidList) {
-            if (vidListElement.identity === window.videoId) {
-                document.getElementById('videoIdentity').textContent = vidListElement.identity;
-                document.getElementById('videoCode').textContent = vidListElement.code;
-                document.getElementById('videoName').textContent = vidListElement.title;
+        if (selectedFile && filesData[selectedFile]) {
+            const videoInfo = filesData[selectedFile].find(v => v.identity === theVideoId);
+            if (videoInfo) {
+                document.getElementById('videoIdentity').textContent = videoInfo.identity;
+                document.getElementById('videoCode').textContent = videoInfo.code;
+                document.getElementById('videoName').textContent = videoInfo.title;
             }
         }
 
