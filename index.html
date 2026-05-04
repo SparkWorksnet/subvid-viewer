@@ -222,7 +222,19 @@
 
     videojs.registerComponent('DownloadButton', DownloadButton);
 
-    const player = videojs('my-player');
+    const player = videojs('my-player', {
+        html5: {
+            vhs: {
+                overrideNative: !videojs.browser.IS_SAFARI,
+                enableLowInitialPlaylist: true,
+                smoothQualityChange: true
+            },
+            nativeVideoTracks: videojs.browser.IS_SAFARI,
+            nativeAudioTracks: videojs.browser.IS_SAFARI,
+            nativeTextTracks: videojs.browser.IS_SAFARI
+        },
+        playbackRates: [0.5, 1, 1.25, 1.5, 2]
+    });
 
     // Initialize Choices.js on video dropdown
     videoChoices = new Choices('#video_id', {
